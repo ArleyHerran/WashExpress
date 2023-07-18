@@ -20,9 +20,7 @@
 
         
 
-        <v-btn icon>
-          <v-icon>mdi-heart</v-icon>
-        </v-btn>
+        <v-btn variant="outlined" @click="estados.cerrarSesion()">Cerrar sesion</v-btn>
 
         <v-btn icon>
           <v-icon>mdi-dots-vertical</v-icon>
@@ -34,4 +32,7 @@
 
 <script setup>
   import Turnos from '@/components/TablaTurnos.vue'
+  import { useAppStore } from "../store/app";
+
+const estados = useAppStore();
 </script>
