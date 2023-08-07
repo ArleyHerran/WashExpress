@@ -28,7 +28,7 @@
     </v-btn>
     <!-- Agregar el diálogo/modal -->
     <formulario></formulario>
-
+   
     <v-table dense  :sort-by="'Codigo'" :sort-desc="false" theme="dark" style="border: 1px solid #767575;">
       <thead>
         <tr>
@@ -75,10 +75,10 @@
 <script setup>
 import { ref, computed, watch,  onMounted} from 'vue';
 import { useAppStore } from "../store/app";
-//import { useRouter } from "vue-router";
-
-const estados = useAppStore();
 import Formulario from "@/components/FormTurno.vue";
+
+//import { useRouter } from "vue-router";
+const estados = useAppStore();
 
 const currentPage = ref(1);
 const itemsPerPage = ref(20);
@@ -88,6 +88,7 @@ const desserts = ref(estados.turnos);
 onMounted(() => {
   // Llamar a la acción al cargar el componente
   estados.getTurnos();
+  estados.getServicios();
 });
 
 const sortedItems = computed(() => {

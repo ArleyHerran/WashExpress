@@ -32,6 +32,9 @@ export const useAppStore = defineStore("app", {
     formTurno: { display: false, f: 0 },
     edit: null,
     turnos: [],
+    drawer:false,
+    formServices:false,
+    servicios:[],
     loginInfo: { display: false, title: "", text: "", color: "", icon: "" },
   }),
   actions: {
@@ -89,6 +92,33 @@ export const useAppStore = defineStore("app", {
           turnos.push(turno);
         });
         this.turnos = turnos;
+      });
+    },
+
+    //FUNCION AGREGAR SERVICIO
+    async addServicios(labs) {
+      try {
+        const docRef = await addDoc(collection(db, "servicios"), labs);
+        //console.log("Document written with ID: ", docRef.id);
+        this.formServices = false;
+        alert("Registro agregado con exito")
+      } catch (error) {
+        // console.error("Error adding document: ", error);
+        this.formServices = false;
+        alert("Ha ocurrido un error")
+      }
+    },
+
+    //FUNCION  OBTENER  SERVICIOS
+    getServicios() {
+      const q = query(collection(db, "servicios"), where("nombre", "!=", ""));
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const labs = [];
+        querySnapshot.forEach((doc) => {
+          labs.push(doc.data());
+        });
+        this.servicios = labs;
+        //console.log(labs);
       });
     },
 
@@ -184,7 +214,6 @@ export const useAppStore = defineStore("app", {
       return `${year}-${month}-${day}`;
     },
     //lib error firebase
-
     getAuthErrorMessage(errorCode) {
       switch (errorCode) {
         case "auth/email-already-in-use":

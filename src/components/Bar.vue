@@ -1,8 +1,7 @@
 <template>
-  <div style="background: rgb(30, 32, 44); height:100% ;" >
-    <v-app-bar
+     <v-app-bar
         color="teal-darken-4"
-        image="https://picsum.photos/1920/1080?random"
+        image="https://picsum.photos/1920/1080?random" 
       >
         <template v-slot:image>
           <v-img
@@ -11,25 +10,19 @@
         </template>
 
         <template v-slot:prepend>
-          <v-app-bar-nav-icon></v-app-bar-nav-icon>
+          <v-app-bar-nav-icon @click="estados.drawer = !estados.drawer"></v-app-bar-nav-icon>
+
         </template>
 
         <v-app-bar-title>WahsExpress</v-app-bar-title>
 
         <v-spacer></v-spacer>
 
-        
-
-        <v-btn variant="outlined" @click="estados.cerrarSesion()">Cerrar sesion</v-btn>
-
         <v-btn icon>
           <v-icon>mdi-dots-vertical</v-icon>
         </v-btn>
       </v-app-bar>
-  <Turnos />
-</div>
 </template>
-
 <script setup>
   import Turnos from '@/components/TablaTurnos.vue'
   import { useAppStore } from "../store/app";

@@ -34,6 +34,6 @@ import { useAppStore } from "../store/app";
 const estados = useAppStore();
 onMounted(() => {
   // Llamar a la acción al cargar el componente
-  estados.userLogin();
+  //estados.userLogin();
 });
 </script>

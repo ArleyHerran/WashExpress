@@ -15,9 +15,25 @@ const routes = [
         }
       },
       {
-        path: '/Home',
-        name: 'Home',
-        component: () => import(/* webpackChunkName: "home" */ '@/views/Home.vue'),
+        path: '/Dasboard',
+        name: 'Dasboard',
+        component: () => import(/* webpackChunkName: "home" */ '@/views/Dasboard.vue'),
+        meta:{
+          requireAuth:true
+        }
+      },
+      {
+        path: '/Turnos',
+        name: 'Turnos',
+        component: () => import(/* webpackChunkName: "home" */ '@/views/Turnos.vue'),
+        meta:{
+          requireAuth:true
+        }
+      },
+      {
+        path: '/Historia',
+        name: 'Historia',
+        component: () => import(/* webpackChunkName: "home" */ '@/views/Historia.vue'),
         meta:{
           requireAuth:true
         }
@@ -45,7 +61,7 @@ router.beforeEach((to,from ,next)=>{
       //console.log("tiene que loguear");
      
     } else if (user && !needAuth) {
-      next('/Home');
+      next('/Dasboard');
      // console.log("logueadoo");
       
     } else {
