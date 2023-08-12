@@ -55,7 +55,7 @@ const precio = ref('');
 function saveServices() {
   if (servi.value === "" || servi.value.length > 100 || precio.value === "" || precio.value.length > 100) {
     alert(
-      "Error: E1225l nombre o precio  no pueden estar vacío ni tener más de 100 caracteres."
+      "Error: el nombre o precio  no pueden estar vacío ni tener más de 100 caracteres."
     );
     
     return;

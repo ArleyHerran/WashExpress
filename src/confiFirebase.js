@@ -1,9 +1,9 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 //import { getAnalytics } from "firebase/analytics";
-import {getAuth, indexedDBLocalPersistence} from "firebase/auth";
+import {getAuth ,indexedDBLocalPersistence} from "firebase/auth";
 import {getFirestore, initializeFirestore,persistentSingleTabManager, persistentLocalCache,  CACHE_SIZE_UNLIMITED } from "firebase/firestore"
-
+import { getStorage, ref as storageRef, uploadBytesResumable } from 'firebase/storage';
 const firebaseConfig = {
   apiKey: "AIzaSyBbKSKZeaGWwvE7CjV8Ghum84e4Cey6wyk",
   authDomain: "aprendiz-sena-arleyherran.firebaseapp.com",
@@ -25,13 +25,11 @@ initializeFirestore(app,
 
 const auth = getAuth(app);
 const db = getFirestore(app);
-
+const storage = getStorage(app);
 
 // Habilitar el almacenamiento en caché persistente
 
   
 
 
-
-
-export{auth,db};
+export{auth,db,storage};

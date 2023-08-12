@@ -20,19 +20,26 @@ import {
   endAt,
   setDoc,
   deleteDoc,
+  updateDoc,
 } from "firebase/firestore";
-
 import { db } from "../confiFirebase";
 import { defineStore } from "pinia";
-
+import {  ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { storage } from "../confiFirebase";
 import { useRouter } from "vue-router";
 
 export const useAppStore = defineStore("app", {
   state: () => ({
+    user:{id:null,nombre:null,img:""},
+    formPerfil:false,
+    datas:false,
     formTurno: { display: false, f: 0 },
+    progres:{display:false,ms:''},
     edit: null,
     turnos: [],
+    historias:[],
     drawer:false,
+    dasboard:{balance:0,turnosP:0,cancelados:0},
     formServices:false,
     servicios:[],
     loginInfo: { display: false, title: "", text: "", color: "", icon: "" },
@@ -50,55 +57,175 @@ export const useAppStore = defineStore("app", {
     //FUNCION PARA AGREGAR TURNO
     async addTurno(turno) {
       try {
-        // Add a new document with a generated id.
-        const docRef = await addDoc(collection(db, "turnos"), turno);
-        console.log("Document written with ID: ", docRef.id);
+     
+        const docRef = collection(db, 'Usuarios', this.user.id, 'Turnos');
+        const nuevoTurnoRef = await addDoc(docRef, turno);
+       /// console.log("Document written with ID: ", nuevoTurnoRef);
       } catch (e) {
         alert("Ocurrio un error : " + e);
       }
     },
-    //FUNCION PARA ELIMINAR TURNO
-    async eliminarTurno(v) {
-      if (confirm("¿Estás seguro que deseas eliminar este producto?")) {
-        const docRef = await doc(db, "turnos", v);
-        try {
-          await deleteDoc(docRef);
-          alert("Turno Eliminado");
-        } catch (error) {
-          console.error("Error eliminando el documento: ", error);
-        }
-      }
+     //FUNCION PARA TRAER LOS TURNOS
+     async getTurnos() {
+
+      const docRef = collection(db, 'Usuarios', this.user.id, 'Turnos');
+      const q = query(docRef, where("placa", "!=", ""));
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const turnos = [];
+    
+        querySnapshot.forEach((doc) => {
+          const item = doc.data();
+          item.id = doc.id; // Agregar el ID del documento al objeto "turno"
+            turnos.push(item);
+        });
+        this.turnos = turnos;
+        this.dasboard.turnosP=this.turnos.length;
+      });
     },
     //FUNCION PARA EDITAR TURNO
     async editarTurno(turno) {
       try {
         await runTransaction(db, async (transaction) => {
-          await setDoc(doc(db, "turnos", turno.id), turno);
+          await setDoc(doc(db, "Usuarios",this.user.id ,"Turnos",turno.id), turno);
         });
         alert("Cambios guardados con exito");
       } catch (e) {
         alert("Ocurrio un error :", e);
       }
     },
-    //FUNCION PARA TRAER LOS TURNOS
-    async getTurnos() {
-      const q = query(collection(db, "turnos"), where("placa", "!=", ""));
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const turnos = [];
+    //FUNCION PARA ELIMINAR TURNO
+    async eliminarTurno(v) {
+      if (confirm("¿Estás seguro que deseas eliminar este registro?")) {
+        const documentoRef = doc(db, 'Usuarios', this.user.id, 'Turnos', v);
+        const bRef = doc(db, 'Usuarios', this.user.id, 'Balances', this.hoy());
+     
+        try {
 
+          await runTransaction(db, async (transaction) => {
+            await updateDoc(documentoRef,{estado: 'delet',fechaCierre:this.hoy()});
+            const docSnap = await getDoc(documentoRef);
+            await setDoc(doc(db, 'Usuarios', this.user.id, 'Historial', v), docSnap.data());
+            await deleteDoc(doc(db, 'Usuarios', this.user.id, 'Turnos', v));
+
+            const b = await getDoc(bRef);
+      
+
+            if (b.exists()) {
+              // El documento existe, puedes acceder y actualizar los datos
+              const canceladosAnteriores = b.data().cancelados || 0; // Manejo de valor inicial
+            
+              // Realiza la actualización
+              await updateDoc(bRef, {
+                cancelados: canceladosAnteriores + 1
+              });
+            } else {
+              // El documento no existe, crea el documento con los datos proporcionados
+              await setDoc(bRef, {
+                cancelados: 1 // Puedes establecer otros valores iniciales si lo deseas
+              });
+            }
+      
+   });
+         
+          alert("Registro Eliminado");
+        } catch (error) {
+          console.error("Error eliminando el registro: ", error);
+        }
+      }
+    },
+     //FUNCION PARA FACTURAR TURNO
+     async facturarTurno(v) {
+      if (confirm("¿Estás seguro que deseas facturar?")) {
+        const documentoRef = doc(db,"Usuarios",this.user.id,"Turnos",v);
+        const bRef = doc(db,"Usuarios",this.user.id,"Balances",this.hoy());
+        try {
+
+          await runTransaction(db, async (transaction) => {
+            await updateDoc(documentoRef,{estado: 'facturado',fechaCierre:this.hoy() });
+            const docSnap = await getDoc(documentoRef);
+            await setDoc(doc(db,"Usuarios",this.user.id, "Historial", v), docSnap.data());
+            await deleteDoc(doc(db,"Usuarios",this.user.id, "Turnos", v));
+
+            const b = await getDoc(bRef);
+      
+
+            if (b.exists()) {
+              // El documento existe, puedes acceder y actualizar los datos
+              const canceladosAnteriores = b.data().ba || 0; // Manejo de valor inicial
+            
+              // Realiza la actualización
+              await updateDoc(bRef, {
+                ba: parseInt(canceladosAnteriores) + parseInt(docSnap.data().precio)
+              });
+            } else {
+              // El documento no existe, crea el documento con los datos proporcionados
+              await setDoc(bRef, {
+                ba: parseInt(docSnap.data().precio) // Puedes establecer otros valores iniciales si lo deseas
+              });
+            }
+      
+   });
+         
+          alert("Turno facturado");
+        } catch (error) {
+          console.error("Error al facturar: ", error);
+        }
+      }
+    },
+    //GET BALANCE DEL DIA
+    async getBalance(){
+
+      const documentoRef = doc(db,"Usuarios",this.user.id, "Balances", this.hoy());
+
+      const unsubscribe = onSnapshot(documentoRef, (docSnapshot) => {
+        // Esta función se ejecutará cada vez que el documento sufra un cambio
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data();
+          function p(){
+            if(data.ba){return data.ba}else{return 0;}
+          };
+          this.dasboard.balance=p();
+          this.dasboard.cancelados=data.cancelados;
+          // Realiza aquí las acciones que necesites con los datos actualizados
+        } else {
+         // console.log("El documento no existe.");
+          this.dasboard.balance=0;
+          this.dasboard.cancelados=0;
+          // Realiza aquí las acciones que necesites si el documento ya no existe
+        }
+      });
+      
+    
+
+    },
+    
+    ///ME PERMITE TRAER LA COLECION DE HISTOIAL Y FILTRARLA POR UN RANGO DE FECHA;
+    async getHistorias(fi, ff) {
+      const q = query(
+        collection(db, 'Usuarios', this.user.id, 'Historial'),
+        where("fechaCierre", ">=", fi),
+        where("fechaCierre", "<=", ff)
+      );
+
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const histori = [];
+       // this.filtro.total = 0;
+       // this.filtro.utilidad = 0;
         querySnapshot.forEach((doc) => {
-          const turno = doc.data();
-          turno.id = doc.id; // Agregar el ID del documento al objeto "turno"
-          turnos.push(turno);
+          const data = doc.data();
+          // Si el campo "id" no está definido, lo agregamos usando el ID del documento
+          if (!data.id) {
+            data.id = doc.id;
+          }
+          histori.push(data);
         });
-        this.turnos = turnos;
+        this.historias=histori;
       });
     },
-
     //FUNCION AGREGAR SERVICIO
     async addServicios(labs) {
       try {
-        const docRef = await addDoc(collection(db, "servicios"), labs);
+        const docRef = await addDoc(collection(db, "Usuarios",this.user.id,"Servicios"), labs);
         //console.log("Document written with ID: ", docRef.id);
         this.formServices = false;
         alert("Registro agregado con exito")
@@ -111,17 +238,16 @@ export const useAppStore = defineStore("app", {
 
     //FUNCION  OBTENER  SERVICIOS
     getServicios() {
-      const q = query(collection(db, "servicios"), where("nombre", "!=", ""));
+      const q = query(collection(db, "Usuarios",this.user.id,"Servicios"), where("nombre", "!=", ""));
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const labs = [];
         querySnapshot.forEach((doc) => {
-          labs.push(doc.data());
+            labs.push(doc.data());
         });
         this.servicios = labs;
-        //console.log(labs);
+      
       });
     },
-
     //CREAR USAURIO CON CORREO  Y CONTRASEÑA
     async registrar(email, password) {
       const auth = getAuth();
@@ -155,8 +281,43 @@ export const useAppStore = defineStore("app", {
           // ..
         });
     },
+   //SUBIR IMG
+  async subirImg(odject,file){
+   if(!file){
+    this.guardarDatos(odject.nombre,'');
+    return;
+   }
+  const storageRef = ref(storage, 'images/perfil/'+this.user.id+'.jpg');
+  const uploadTask = uploadBytesResumable(storageRef, file);
+  uploadTask.on('state_changed', 
+    (snapshot) => {
+      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      //console.log('Upload is ' + progress + '% done');
+      switch (snapshot.state) {
+        case 'paused':
+        //  console.log('Upload is paused');
+          break;
+        case 'running':
+        //  console.log('Upload is running');
+          break;
+      }
+    }, 
+    (error) => {
+      // Handle unsuccessful uploads
+    }, 
+    () => {
+      // Handle successful uploads on complete
+      // For instance, get the download URL: https://firebasestorage.googleapis.com/...
+      getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+       
+        this.guardarDatos(odject.nombre,downloadURL);
+       
+      });
+    }
+  );
+  },
 
-    //FUNCION QUE PERMITE LOGEAR AL USUARIO
+   //FUNCION QUE PERMITE LOGEAR AL USUARIO
     login(email, password) {
       const auth = getAuth();
       console.log(email);
@@ -187,6 +348,81 @@ export const useAppStore = defineStore("app", {
           this.loginInfo.display = true;
         });
     },
+   //GUARDAR DATOS DEL PERFIL DEL USUARIO
+   async guardarDatos(nombre,img){
+      const bRef = doc(db,"Usuarios",this.user.id,"UserData",'perfil');
+   
+      try {
+
+        await runTransaction(db, async (transaction) => {
+          const b = await getDoc(bRef);
+          if (b.exists()) {
+           if(img!==''){
+            await updateDoc(bRef, {nombre:nombre,img:img});
+          }else{
+            await updateDoc(bRef, {nombre:nombre});
+           }
+            
+          } else {
+            
+            if(img!==''){
+              await setDoc(bRef, {nombre:nombre,img:img});
+            }else{
+              await setDoc(bRef, {nombre:nombre,img:''});
+             }
+          }
+    
+        });
+        this.progres={display:false,ms:''}
+        this.formPerfil=false;
+        alert("Perfil actualizado");
+      } catch (error) {
+        this.formPerfil=false;
+        this.progres={display:false,ms:''}
+        alert("Error al actualizar perfil");
+      }
+    
+    },
+    //OBTENER LOS DATOS DEL PERFIL USUARIO
+    async getUserDataFirebase(){
+      const id= await this.getUserData();
+     
+        const documentoRef = doc(db,"Usuarios",id,"UserData", 'perfil');
+  
+        const unsubscribe = onSnapshot(documentoRef, (docSnapshot) => {
+          // Esta función se ejecutará cada vez que el documento sufra un cambio
+          if (docSnapshot.exists()) {
+            const data = docSnapshot.data();
+            if(data.img=="")data.img="https://images.vexels.com/media/users/3/146244/isolated/preview/77fd70114be4a7027595861839cbb099-coche-lavado-con-icono-de-manguera.png";
+            if(data.nombre=="")data.nombre="Usuario";
+            this.user.nombre=data.nombre;
+            this.user.img=data.img;
+          
+          } else {
+            this.user.nombre="Usuario";
+            this.user.img="https://images.vexels.com/media/users/3/146244/isolated/preview/77fd70114be4a7027595861839cbb099-coche-lavado-con-icono-de-manguera.png";
+          this.formPerfil=true;
+          }
+          
+        });
+        
+      
+      },
+    //OBTENER DATOS LOCALES DEL USUARIO
+    getUserData(){
+
+const userDataJSON = localStorage.getItem("usuario");
+if (userDataJSON) {
+  const userData = JSON.parse(userDataJSON);
+  this.user.id=userData.user.uid;
+ return userData.user.uid;
+
+} else {
+  return false;
+
+}
+    },
+    
 
     //FUNCION QUE PERMITE CERRAR LA SESION
     cerrarSesion() {
@@ -213,7 +449,7 @@ export const useAppStore = defineStore("app", {
       const day = ("0" + date.getDate()).slice(-2);
       return `${year}-${month}-${day}`;
     },
-    //lib error firebase
+    //LIBRERIA ERRORES DE FIREBASE AUTH
     getAuthErrorMessage(errorCode) {
       switch (errorCode) {
         case "auth/email-already-in-use":
@@ -246,6 +482,30 @@ export const useAppStore = defineStore("app", {
           return "Ha ocurrido un error de autenticación desconocido.";
       }
     },
+
+   async prueba(){
+      const id= 'M4b9HHdelgTx8YNbyMAkg8QXJVG2';
+     
+        const documentoRef = doc(db,"Usuarios",id,"UserData", 'perfil');
+  
+        const unsubscribe = onSnapshot(documentoRef, (docSnapshot) => {
+          // Esta función se ejecutará cada vez que el documento sufra un cambio
+          if (docSnapshot.exists()) {
+            const data = docSnapshot.data();
+            if(data.img=="")data.img="https://images.vexels.com/media/users/3/146244/isolated/preview/77fd70114be4a7027595861839cbb099-coche-lavado-con-icono-de-manguera.png";
+            if(data.nombre=="")data.nombre="Usuario";
+            this.user.nombre=data.nombre;
+            this.user.img=data.img;
+          
+          } else {
+            this.user.nombre="Usuario";
+            this.user.img="https://images.vexels.com/media/users/3/146244/isolated/preview/77fd70114be4a7027595861839cbb099-coche-lavado-con-icono-de-manguera.png";
+          this.formPerfil=true;
+          }
+          
+        });
+        
+    }
   },
 
   getters: {

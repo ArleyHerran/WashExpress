@@ -38,6 +38,7 @@
           <th class="text-left">Fecha</th>
           <th class="text-left">Hora</th>
           <th class="text-left">Acciones</th>
+          <th class="text-left">Factura</th>
         </tr>
       </thead>
       <tbody>
@@ -54,6 +55,13 @@
               >mdi-pencil</v-icon
             >
             <v-icon color="red" @click="estados.eliminarTurno(item.id)">mdi-delete</v-icon>
+          </td>
+          <td>
+            <v-btn color="primary" class="mb-5 "  fab dark @click="estados.facturarTurno(item.id)">
+     
+            <v-icon>mdi-plus</v-icon>
+      Facturar
+    </v-btn>
           </td>
         </tr>
       </tbody>
@@ -85,11 +93,7 @@ const itemsPerPage = ref(20);
 const search = ref('');
 const desserts = ref(estados.turnos);
 
-onMounted(() => {
-  // Llamar a la acción al cargar el componente
-  estados.getTurnos();
-  estados.getServicios();
-});
+
 
 const sortedItems = computed(() => {
   return filteredDesserts.value.sort((a, b) => {

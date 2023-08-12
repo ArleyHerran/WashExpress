@@ -18,7 +18,7 @@
               outlined
               allow-custom-value
             >
-              <template #append>
+              <template #append v-if="estados.formTurno.f!=3">
                 <v-btn icon @click="estados.formServices = true">
                   <v-icon>mdi-plus</v-icon>
                 </v-btn>
@@ -45,8 +45,8 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="blue darken-1" text @click="cancelar()">Cancelar</v-btn>
-          <v-btn color="blue darken-1" text @click="saveItem">Guardar</v-btn>
+          <v-btn color="blue darken-1" text @click="cancelar()">{{tituloBtnA }}</v-btn>
+          <v-btn v-if="estados.formTurno.f!=3"  color="blue darken-1" text @click="saveItem">Guardar</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -58,6 +58,7 @@ import { useAppStore } from "../store/app";
 import FormServi from '@/components/FormServicios.vue'
 const estados = useAppStore();
 const titulo = ref("Agregar Turno");
+const tituloBtnA = ref("Cancelar");
 
 const editedItem = ref({
   id: null,
@@ -67,7 +68,9 @@ const editedItem = ref({
   precio: null,
   celular: null,
   fecha: null,
+  fechaCierre:null,
   hora: null,
+  estado:'turno'
 });
 const se=ref('')
 async function saveItem() {
@@ -96,9 +99,16 @@ function cancelar() {
 watch(() => estados.formTurno, (newVal) => {
   if (newVal.f === 1) {
     titulo.value = 'Agregar Turno';
+    tituloBtnA.value='Cancelar';
     limpiar();
-  } else {
+  } else if(newVal.f === 2){
     titulo.value = 'Editar Turno';
+    tituloBtnA.value='Cancelar';
+    const u = Object.assign({}, estados.edit);
+    editedItem.value = u;
+  }else if(newVal.f === 3){
+    titulo.value = 'Vista';
+    tituloBtnA.value='Cerrar';
     const u = Object.assign({}, estados.edit);
     editedItem.value = u;
   }
@@ -119,7 +129,7 @@ function getNombresServicios() {
 function actualizarPrecio() {
 
   const servicioEncontrado = estados.$state.servicios.find(servicio => servicio.nombre === se.value);
-  console.log( servicioEncontrado);
+  //console.log( servicioEncontrado);
   if (servicioEncontrado) {
  
     editedItem.value.precio = servicioEncontrado.precio;
